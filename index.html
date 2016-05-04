@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="description" content="RxJS Time Operator Comparison">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/2.5.3/rx.all.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/2.5.3/rx.time.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/2.5.3/rx.virtualtime.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/2.5.3/rx.testing.js"></script>
+    <script type="text/javascript">
+    var moves = Rx.Observable.fromEvent(document, 'mousemove');
+    var DELAY_MS = 300;
+    var dbCount = 0,
+        thrCount = 0,
+        thrFCount = 0,
+        samCount = 0;
+
+    var dataMap = {};
+
+    function setText(id, event, dataItem) {
+        var tdOpen = '<td>',
+            tdClose = '</td>';
+        var rowHtml = makeColumn(id) +
+            makeColumn(event.x + ', ' + event.y) +
+            makeColumn(dataItem.lastUpdateDelay) +
+            makeColumn(dataItem.count);
+        document.getElementById(id).innerHTML = rowHtml;
+
+        function makeColumn(text) {
+            return tdOpen + text + tdClose;
+        }
+    }
+
+    function updateItem(id) {
+        if (!dataMap[id]) {
+            dataMap[id] = {
+                'count': 1,
+                'lastUpdateTime': Date.now(),
+                'lastUpdateDelay': 0
+            };
+        } else {
+            dataMap[id].count = ++dataMap[id].count;
+            dataMap[id].lastUpdateDelay = (Date.now() - dataMap[id].lastUpdateTime);
+            dataMap[id].lastUpdateTime = Date.now();
+        }
+        return dataMap[id];
+    }
+
+    moves.debounce(DELAY_MS).subscribe(function(event) {
+        var id = 'debounce';
+        setText(id, event, updateItem(id));
+    });
+
+    moves.throttle(DELAY_MS).subscribe(function(event) {
+        var id = 'throttle';
+        setText(id, event, updateItem(id));
+    });
+
+    moves.throttleFirst(DELAY_MS).subscribe(function(event) {
+        var id = 'throttleFirst';
+        setText(id, event, updateItem(id));
+    });
+
+    moves.sample(DELAY_MS).subscribe(function(event) {
+        var id = 'sample';
+        setText(id, event, updateItem(id));
+    });
+    </script>
+    <meta charset="utf-8">
+    <title>JS Bin</title>
+</head>
+<style>
+td,
+th {
+    border: thin black solid
+}
+</style>
+
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th>Function</th>
+                <th>Value</th>
+                <th>Last Update Delay(ms)</th>
+                <th>Update Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr id='debounce'></tr>
+            <tr id='throttle'></tr>
+            <tr id='throttleFirst'></tr>
+            <tr id='sample'></tr>
+        </tbody>
+    </table>
+</body>
+
+</html>
